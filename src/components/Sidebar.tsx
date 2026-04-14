@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react'
+
 const sources = [
-  { id: "all", label: "All", count: "36" },
-  { id: "notion", label: "Notion", count: "36" },
-  { id: "gmail", label: "Gmail", count: null },
-  { id: "photos", label: "Photos", count: null },
-  { id: "audio", label: "Audio", count: null },
+  { id: "all",    label: "All",    count: "36", color: "#C8BEA8" },
+  { id: "notion", label: "Notion", count: "36", color: "#5B7B8A" },
+  { id: "gmail",  label: "Gmail",  count: null,  color: "#8A5B5B" },
+  { id: "photos", label: "Photos", count: null,  color: "#8A7A5B" },
+  { id: "audio",  label: "Audio",  count: null,  color: "#5B6E8A" },
 ]
 
 type Props = {
@@ -11,39 +13,104 @@ type Props = {
   onSourceChange: (id: string) => void
 }
 
+function getClockParts() {
+  const now = new Date()
+  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+  const date = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
+  return { time, date }
+}
+
 export default function Sidebar({ activeSource, onSourceChange }: Props) {
+  const [expanded, setExpanded] = useState(false)
+  const [clock, setClock] = useState(getClockParts())
+
+  // Refresh clock every 30s — cheap, stays accurate within half a minute
+  useEffect(() => {
+    const id = setInterval(() => setClock(getClockParts()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
   return (
-    <div className="w-[220px] flex-shrink-0 bg-white/[0.05] backdrop-blur-xl border-r border-white/[0.08] flex flex-col py-4">
-      {/* Title bar dots */}
-      <div className="flex items-center gap-2 px-5 mb-6">
-        <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
-        <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-        <div className="w-3 h-3 rounded-full bg-[#28c840]" />
-        <span className="ml-auto text-[11px] tracking-widest uppercase text-white/20">Jarvis</span>
+    <div
+      className="flex-shrink-0 flex flex-col border-r border-[#2E2B26] transition-all duration-[220ms] overflow-hidden"
+      style={{
+        width: expanded ? 164 : 40,
+        background: '#161412',
+        transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)',
+      }}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+    >
+      {/* Drag region — clears macOS traffic lights (positioned at y:18 in app/main.js)
+          and lets the user drag the window from the top of the sidebar */}
+      <div
+        className="h-12 flex-shrink-0"
+        style={{ WebkitAppRegion: 'drag' } as any}
+      />
+
+      {/* ≡ readout icon + SOURCES label (label appears only when expanded) */}
+      <div className="px-3 mb-4 flex items-center gap-2 h-7">
+        <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 16 16" fill="none">
+          <line x1="2" y1="5"  x2="14" y2="5"  stroke="#4A463F" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="2" y1="8"  x2="14" y2="8"  stroke="#4A463F" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="2" y1="11" x2="14" y2="11" stroke="#4A463F" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+        {expanded && (
+          <span
+            className="text-[9px] tracking-widest uppercase text-[#4A463F] whitespace-nowrap"
+            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+          >
+            Sources
+          </span>
+        )}
       </div>
 
-      {/* Source filters */}
-      <div className="px-3">
-        <p className="text-[10px] tracking-widest uppercase text-white/20 px-2 mb-2">Sources</p>
-        {sources.map(s => (
-          <button
-            key={s.id}
-            onClick={() => s.count && onSourceChange(s.id)}
-            className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg mb-0.5 transition-colors text-left
-              ${activeSource === s.id ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"}
-              ${!s.count ? "opacity-40 cursor-default" : "cursor-pointer"}`}
-          >
-            {/* Source icon dot */}
-            <div className="w-4 h-4 rounded flex-shrink-0 bg-white/[0.06] border border-white/10" />
-            <span className={`text-[13px] ${activeSource === s.id ? "text-white/85" : "text-white/45"}`}>
-              {s.label}
-            </span>
-            <span className="ml-auto text-[11px] text-white/20">
-              {s.count ?? "soon"}
-            </span>
-          </button>
-        ))}
+      {/* Source filter items */}
+      <div className="flex-1 px-2 flex flex-col gap-0.5">
+        {sources.map(s => {
+          const active = activeSource === s.id
+          return (
+            <button
+              key={s.id}
+              onClick={() => s.count && onSourceChange(s.id)}
+              className={`flex items-center gap-2.5 px-2 py-2 rounded-md w-full transition-all
+                ${active ? 'bg-white/[0.08]' : 'hover:bg-white/[0.04]'}
+                ${!s.count ? 'opacity-35 cursor-default' : 'cursor-pointer'}`}
+            >
+              {/* Active source: orange accent dot. Inactive: source's own color */}
+              <div
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                style={{ background: active ? '#E8590C' : s.color }}
+              />
+              {expanded && (
+                <>
+                  <span className={`text-[12px] flex-1 text-left whitespace-nowrap
+                    ${active ? 'text-[#C8BEA8] font-medium' : 'text-[#7A7060]'}`}>
+                    {s.label}
+                  </span>
+                  <span
+                    className="text-[10px] text-[#4A463F] ml-auto"
+                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                  >
+                    {s.count ?? '—'}
+                  </span>
+                </>
+              )}
+            </button>
+          )
+        })}
       </div>
+
+      {/* Live clock footer — only visible when sidebar is expanded */}
+      {expanded && (
+        <div
+          className="px-4 pb-4 pt-2 border-t border-[#2E2B26]"
+          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+        >
+          <p className="text-[9px] text-[#2E2B26] leading-tight">{clock.time}</p>
+          <p className="text-[9px] text-[#2E2B26] leading-tight">{clock.date}</p>
+        </div>
+      )}
     </div>
   )
 }

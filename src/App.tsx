@@ -4,7 +4,6 @@ import SearchBar from "./components/SearchBar.tsx"
 import AnswerPanel from "./components/AnswerPanel.tsx"
 import RecentPanel from "./components/RecentPanel.tsx"
 
-// Shape of a single source result from the backend
 export type Source = {
   title: string
   content: string
@@ -13,7 +12,6 @@ export type Source = {
   similarity: number
 }
 
-// Shape of the full search response
 export type SearchResult = {
   answer: string
   sources: Source[]
@@ -28,8 +26,6 @@ export default function App() {
   async function handleSearch(query: string) {
     if (!query.trim()) return
     setLoading(true)
-
-    // Add query to recent history
     setHistory(prev => [query, ...prev.slice(0, 9)])
 
     try {
@@ -48,23 +44,28 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-[#0a0a0a] overflow-hidden relative">
-      {/* Ambient color blobs — give backdrop-blur something to render */}
-      <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-purple-900/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-900/15 rounded-full blur-3xl pointer-events-none" />
+    /* Full-screen canvas — bg-transparent lets Electron vibrancy show through */
+    <div className="h-screen w-screen overflow-hidden relative bg-transparent">
 
-      {/* Left sidebar — source filters */}
-      <Sidebar activeSource={activeSource} onSourceChange={setActiveSource} />
+      {/* Subtle neutral vignette blobs — give backdrop-blur something to catch */}
+      <div className="absolute inset-0 opacity-40"
+        style={{ background: "radial-gradient(ellipse at 30% 60%, #6b7585 0%, transparent 65%)" }} />
+      <div className="absolute inset-0 opacity-25"
+        style={{ background: "radial-gradient(ellipse at 75% 30%, #8090a0 0%, transparent 60%)" }} />
 
-      {/* Main area */}
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Search bar at top */}
-        <SearchBar onSearch={handleSearch} loading={loading} />
+      {/* THE ONE BIG GLASS CARD — edge-to-edge, macOS handles rounding via roundedCorners */}
+      <div className="glass-card absolute inset-0 flex overflow-hidden border-0 shadow-[0_8px_80px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15)]">
 
-        {/* Results area */}
-        <div className="flex flex-1 gap-5 p-6 overflow-hidden">
-          <AnswerPanel result={result} loading={loading} />
-          <RecentPanel history={history} onSelect={handleSearch} />
+        {/* Sidebar — drag region at top clears macOS traffic lights */}
+        <Sidebar activeSource={activeSource} onSourceChange={setActiveSource} />
+
+        <div className="flex flex-col flex-1 min-w-0">
+          <SearchBar onSearch={handleSearch} loading={loading} />
+
+          <div className="flex flex-1 gap-4 p-5 overflow-hidden">
+            <AnswerPanel result={result} loading={loading} />
+            <RecentPanel history={history} onSelect={handleSearch} />
+          </div>
         </div>
       </div>
     </div>
