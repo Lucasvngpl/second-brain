@@ -35,7 +35,7 @@ def search(query: Query):
         "match_count": 8
     }).execute()
 
-    sources = [s for s in results.data if s["similarity"] > 0.25][:5]  # list of matching chunks with title, content, url, source
+    sources = [s for s in results.data if s["similarity"] > 0.35][:3]  # list of matching chunks with title, content, url, source
 
     # Step 3 — build context string from the matching chunks
     context = "\n\n".join([
