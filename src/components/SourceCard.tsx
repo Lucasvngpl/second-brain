@@ -20,14 +20,14 @@ export default function SourceCard({ source }: Props) {
       onClick={() => setExpanded(!expanded)}
       className="rounded-md px-4 py-3 cursor-pointer transition-all"
       style={{
-        background: expanded ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)",
-        border: "0.5px solid #2A2722",
+        background: expanded ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.04)",
+        border: "0.5px solid rgba(255,255,255,0.07)",
       }}
       onMouseEnter={e => {
-        if (!expanded) (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.05)"
+        if (!expanded) (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.06)"
       }}
       onMouseLeave={e => {
-        if (!expanded) (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"
+        if (!expanded) (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.04)"
       }}
     >
       <div className="flex items-center gap-3">

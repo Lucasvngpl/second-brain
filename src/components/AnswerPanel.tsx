@@ -56,7 +56,7 @@ export default function AnswerPanel({ result, loading }: Props) {
       {/* Synthesized answer */}
       <div
         className="rounded-md p-4"
-        style={{ background: "rgba(255,255,255,0.04)", border: "0.5px solid #2E2B26" }}
+        style={{ background: "rgba(255,255,255,0.05)", border: "0.5px solid rgba(255,255,255,0.08)" }}
       >
         {/* — JARVIS — label */}
         <p

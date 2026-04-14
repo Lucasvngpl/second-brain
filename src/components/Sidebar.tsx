@@ -35,7 +35,7 @@ export default function Sidebar({ activeSource, onSourceChange }: Props) {
       className="flex-shrink-0 flex flex-col border-r border-[#2E2B26] transition-all duration-[220ms] overflow-hidden"
       style={{
         width: expanded ? 164 : 40,
-        background: '#161412',
+        background: 'rgba(0,0,0,0.15)',
         transitionTimingFunction: 'cubic-bezier(0.4,0,0.2,1)',
       }}
       onMouseEnter={() => setExpanded(true)}

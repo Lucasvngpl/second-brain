@@ -17,7 +17,7 @@ export default function SearchBar({ onSearch, loading }: Props) {
       <div
         className="flex items-center gap-3 rounded-md transition-all"
         style={{
-          background: "rgba(240,234,220,0.03)",
+          background: "rgba(255,255,255,0.06)",
           border: "0.5px solid #3A3630",
           padding: "11px 14px",
         }}
