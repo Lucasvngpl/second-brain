@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jarvis</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #e8edf5 0%, #f5f0eb 50%, #e8f0ee 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 80px 24px 48px;
+    }
+
+    /* Header */
+    .logo {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      color: rgba(0,0,0,0.3);
+      text-transform: uppercase;
+      margin-bottom: 48px;
+    }
+
+    /* Search bar — liquid glass */
+    .search-wrap {
+      width: 100%;
+      max-width: 640px;
+      position: relative;
+      margin-bottom: 40px;
+    }
+
+    .search-bar {
+      width: 100%;
+      padding: 18px 56px 18px 24px;
+      font-size: 17px;
+      font-weight: 400;
+      color: rgba(0,0,0,0.85);
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.8);
+      border-radius: 20px;
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow:
+        0 4px 24px rgba(0,0,0,0.06),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+
+    .search-bar::placeholder { color: rgba(0,0,0,0.3); }
+
+    .search-bar:focus {
+      background: rgba(255,255,255,0.75);
+      box-shadow:
+        0 8px 32px rgba(0,0,0,0.1),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+
+    .search-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.75);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .search-btn:hover { background: rgba(0,0,0,0.9); }
+
+    .search-btn svg { width: 16px; height: 16px; stroke: white; fill: none; }
+
+    /* Answer card */
+    .answer-card {
+      width: 100%;
+      max-width: 640px;
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.85);
+      border-radius: 20px;
+      padding: 24px 28px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      display: none;
+      animation: fadeUp 0.3s ease;
+    }
+
+    .answer-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.3);
+      margin-bottom: 10px;
+    }
+
+    .answer-text {
+      font-size: 15px;
+      line-height: 1.7;
+      color: rgba(0,0,0,0.8);
+    }
+
+    /* Source cards */
+    .sources-wrap {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .source-card {
+      background: rgba(255,255,255,0.45);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      border: 1px solid rgba(255,255,255,0.75);
+      border-radius: 16px;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+      animation: fadeUp 0.3s ease;
+    }
+
+    .source-card:hover {
+      background: rgba(255,255,255,0.65);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      transform: translateY(-1px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .source-badge {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(0,0,0,0.06);
+      color: rgba(0,0,0,0.45);
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(0,0,0,0.8);
+    }
+
+    .card-snippet {
+      font-size: 13px;
+      color: rgba(0,0,0,0.45);
+      line-height: 1.5;
+      display: none; /* shown on expand */
+    }
+
+    .card-full {
+      font-size: 13px;
+      color: rgba(0,0,0,0.65);
+      line-height: 1.7;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      display: none; /* shown on expand */
+    }
+
+    .card-link {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 12px;
+      color: rgba(0,0,122,0.5);
+      text-decoration: none;
+    }
+
+    .card-link:hover { color: rgba(0,0,200,0.7); }
+
+    /* Loading spinner */
+    .loading {
+      display: none;
+      width: 100%;
+      max-width: 640px;
+      text-align: center;
+      padding: 32px 0;
+      color: rgba(0,0,0,0.3);
+      font-size: 14px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <p class="logo">Jarvis</p>
+
+  <div class="search-wrap">
+    <input
+      class="search-bar"
+      id="searchInput"
+      type="text"
+      placeholder="Ask your second brain anything..."
+      autofocus
+    />
+    <button class="search-btn" onclick="doSearch()">
+      <svg viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="loading" id="loading">Thinking...</div>
+  <div class="answer-card" id="answerCard">
+    <div class="answer-label">Jarvis</div>
+    <div class="answer-text" id="answerText"></div>
+  </div>
+  <div class="sources-wrap" id="sourcesWrap"></div>
+
+  <script>
+    const input = document.getElementById("searchInput")
+    const loading = document.getElementById("loading")
+    const answerCard = document.getElementById("answerCard")
+    const answerText = document.getElementById("answerText")
+    const sourcesWrap = document.getElementById("sourcesWrap")
+
+    // Allow pressing Enter to search
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") doSearch()
+    })
+
+    async function doSearch() {
+      const query = input.value.trim()
+      if (!query) return
+
+      // Reset UI
+      answerCard.style.display = "none"
+      sourcesWrap.innerHTML = ""
+      loading.style.display = "block"
+
+      try {
+        const res = await fetch("http://localhost:8000/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: query })
+        })
+
+        const data = await res.json()
+        loading.style.display = "none"
+
+        // Show synthesized answer
+        answerText.textContent = data.answer
+        answerCard.style.display = "block"
+
+        // Render each source card
+        data.sources.forEach(source => {
+          const card = document.createElement("div")
+          card.className = "source-card"
+
+          // Truncate snippet to 120 chars for the collapsed view
+          const snippet = source.content.slice(0, 120) + (source.content.length > 120 ? "..." : "")
+
+          card.innerHTML = `
+            <div class="card-header">
+              <span class="source-badge">${source.source}</span>
+              <span class="card-title">${source.title}</span>
+            </div>
+            <div class="card-snippet">${snippet}</div>
+            <div class="card-full">${source.content}
+              ${source.url ? `<br/><a class="card-link" href="${source.url}" target="_blank">Open in ${source.source} ↗</a>` : ""}
+            </div>
+          `
+
+          // Toggle expanded content on click
+          card.addEventListener("click", () => {
+            const full = card.querySelector(".card-full")
+            const isOpen = full.style.display === "block"
+            full.style.display = isOpen ? "none" : "block"
+          })
+
+          sourcesWrap.appendChild(card)
+        })
+
+      } catch (err) {
+        loading.style.display = "none"
+        answerText.textContent = "Something went wrong — is the backend running?"
+        answerCard.style.display = "block"
+      }
+    }
+  </script>
+</body>
+</html>
