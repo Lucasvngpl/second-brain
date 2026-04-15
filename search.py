@@ -1,12 +1,16 @@
 import os
+import tempfile
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from supabase import create_client
 import vertexai
 from vertexai.vision_models import MultiModalEmbeddingModel
 import anthropic
+from openai import OpenAI
+from elevenlabs import ElevenLabs
 
 load_dotenv()
 
@@ -15,6 +19,8 @@ supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_
 vertexai.init(project=os.getenv("GCP_PROJECT_ID"), location=os.getenv("GCP_LOCATION"))
 model = MultiModalEmbeddingModel.from_pretrained("multimodalembedding@001")
 claude = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+elevenlabs_client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
 
 app = FastAPI()
 
@@ -23,6 +29,9 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 class Query(BaseModel):
     text: str  # the search query from the user
+
+class SpeakRequest(BaseModel):
+    text: str  # answer text to be spoken
 
 @app.post("/search")
 def search(query: Query):
@@ -61,3 +70,36 @@ def search(query: Query):
         "answer": answer,
         "sources": sources
     }
+
+@app.post("/transcribe")
+async def transcribe(audio: UploadFile = File(...)):
+    # Read the audio bytes from the upload
+    audio_bytes = await audio.read()
+
+    # Write to a temp file — Whisper needs a file-like object with a name
+    with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+        tmp.write(audio_bytes)
+        tmp_path = tmp.name
+
+    # Send to Whisper for transcription
+    with open(tmp_path, "rb") as f:
+        result = openai_client.audio.transcriptions.create(
+            model="whisper-1",
+            file=f
+        )
+
+    os.unlink(tmp_path)
+    return { "text": result.text }
+
+@app.post("/speak")
+def speak(req: SpeakRequest):
+    print(f"[speak] called, text length: {len(req.text)}")
+    # eleven_turbo_v2_5 is the fastest model as of 2025, lowest latency
+    print("[speak] calling ElevenLabs...")
+    audio_stream = elevenlabs_client.text_to_speech.convert_as_stream(
+        voice_id=os.getenv("ELEVENLABS_VOICE_ID"),
+        text=req.text,
+        model_id="eleven_turbo_v2_5"
+    )
+    print("[speak] streaming response back to client")
+    return StreamingResponse(audio_stream, media_type="audio/mpeg")

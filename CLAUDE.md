@@ -9,6 +9,25 @@ multimodal embedding model. Everything lands in the same vector space so you can
 search across modalities with one query. Claude synthesizes an answer from retrieved
 chunks. Eventually voice in + ElevenLabs voice out = Jarvis from Iron Man.
 
+## nothing design skill
+
+A design skill is available at `.nothing-skill/` — read it before making
+any UI changes. It contains the Nothing OS design system including dot
+matrix patterns, typography rules, grid system, spacing, and color usage.
+
+Reference it with:
+read .nothing-skill/SKILL.md
+
+Apply it to Jarvis by combining:
+
+- Nothing's dot matrix → subtle texture on sidebar and empty state
+- Nothing's typography discipline → reinforces our monospace + sans split
+- Nothing's grid and spacing rules → tight, intentional, no decoration
+- Nothing's restraint → show exactly what's needed, nothing else
+
+The Nothing aesthetic + our RAL color system + glassmorphism vibrancy +
+instrument panel personality = the Jarvis design language.
+
 ## stack
 
 - React + TypeScript + Tailwind CSS (frontend)
@@ -56,6 +75,38 @@ npm run electron:dev
 - Reference: the first screenshot in our conversation (dark spotlight-style search
   with photo grid results and similarity scores)
 - Simplicity is the ultimate sophistication
+
+## interface philosophy — glassmorphism + instrument panel
+
+Two ideas working together, not competing:
+
+GLASSMORPHISM — the window material
+The vibrancy blur is functional, not decorative. It makes Jarvis feel
+like it sits on top of your life rather than being a separate app you
+switch to. Keep backgrounds near-transparent so the blurred desktop
+dominates. UI elements are just light frosted layers on top.
+
+INSTRUMENT PANEL — the personality
+The interface feels like it's running. Like something with state and
+awareness, not a static form waiting for input. Reference: TE OP-1
+screen, cockpit readouts, physical instrument panels.
+
+Concretely this means:
+
+- Live clock in the sidebar, always ticking — the interface is awake
+- Source dots reflect real data state — lit when source has data,
+  dim when empty, could pulse when freshly synced
+- Mic button pulses when listening — the interface is paying attention
+- Monospace font for all machine-generated values (scores, timestamps,
+  counts, labels) — these are readouts, not copy
+- The empty state is never blank — show the time, a quiet ambient
+  detail, something that signals the system is alive
+- Transitions are fast and purposeful — nothing floaty or decorative
+- Orange accent (#E8590C) appears only when the interface is active
+  or speaking — it means something is happening
+
+The interface has an opinion and a presence. It whispers, it doesn't
+shout. But it's always on.
 
 ## key files
 

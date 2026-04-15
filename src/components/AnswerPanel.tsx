@@ -9,17 +9,18 @@ type Props = {
 }
 
 function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'good morning, Lucas'
-  if (h < 17) return 'good afternoon, Lucas'
-  return 'good evening, Lucas'
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return "good morning, Lucas"
+  if (hour >= 12 && hour < 17) return "good afternoon, Lucas"
+  if (hour >= 17 && hour < 22) return "good evening, Lucas"
+  return "good night, Lucas"
 }
 
 function EmptyState() {
   const [now, setNow] = useState(new Date())
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000)
+    const id = setInterval(() => setNow(new Date()), 30_000)
     return () => clearInterval(id)
   }, [])
 
@@ -27,14 +28,34 @@ function EmptyState() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-2">
-      {/* Large quiet clock — JetBrains Mono, very muted */}
-      <p
-        className="text-[48px] text-[#2E2B26] leading-none select-none"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+      {/* Dot-grid card housing the clock — Nothing OS physical display aesthetic */}
+      <div
+        className="relative flex flex-col items-center justify-center gap-2 px-10 py-8 rounded-md"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #2E2B26 0.8px, transparent 0.8px)',
+          backgroundSize: '8px 8px',
+        }}
       >
-        {hh}
+        {/* Doto: variable dot-matrix font — reads like a physical LED panel */}
+        <p
+          className="leading-none select-none"
+          style={{
+            fontFamily: '"Doto", monospace',
+            fontSize: 64,
+            color: '#C8BEA8',
+            letterSpacing: '-0.02em',
+            fontWeight: 400,
+          }}
+        >
+          {hh}
+        </p>
+      </div>
+      <p
+        className="text-[12px] text-[#7A7060] select-none"
+        style={{ letterSpacing: '0.12em', marginTop: '8px' }}
+      >
+        {getGreeting()}
       </p>
-      <p className="text-[12px] text-[#4A463F] select-none">{getGreeting()}</p>
     </div>
   )
 }

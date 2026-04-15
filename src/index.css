@@ -41,3 +41,21 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
 
+/* Mic button pulses its border-glow while recording */
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0px rgba(232,89,12,0.5); }
+  50%       { box-shadow: 0 0 0 6px rgba(232,89,12,0); }
+}
+
+/* Radar-sweep arc around the processing orb */
+@keyframes orbSweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Transcript text fades in when it arrives */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
