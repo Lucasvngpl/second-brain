@@ -73,7 +73,8 @@ export default function App() {
 
   // ── Voice: speak answer via ElevenLabs ───────────────────────────────────
   async function speakAnswer(text: string) {
-    setVoiceState('speaking')
+    console.log("speakAnswer called with text length:", text.length)
+    setVoiceState('speaking')  // transition immediately so UI doesn't lag behind audio load
 
     try {
       const res = await fetch("http://localhost:8000/speak", {
@@ -82,20 +83,51 @@ export default function App() {
         body: JSON.stringify({ text })
       })
 
-      const blob = await res.blob()
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'unknown' }))
+        console.error("speak endpoint returned", res.status, err)
+        setVoiceState('idle')
+        isVoiceQueryRef.current = false
+        return
+      }
+
+      // Read as arrayBuffer — more reliable than .blob() for audio data
+      const arrayBuffer = await res.arrayBuffer()
+      console.log("fetch to /speak complete, blob size:", arrayBuffer.byteLength)
+
+      const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
 
+      console.log("Audio created, attempting play")
+
       // Return to results view when audio finishes
       audio.onended = () => {
+        console.log("Audio ended")
         setVoiceState('idle')
         isVoiceQueryRef.current = false
         URL.revokeObjectURL(url)
       }
 
-      audio.play()
-    } catch {
-      // If speaking fails just return to results silently
+      audio.onerror = (e) => {
+        console.error("Audio playback error:", e)
+        setVoiceState('idle')
+        isVoiceQueryRef.current = false
+        URL.revokeObjectURL(url)
+      }
+
+      const playPromise = audio.play()
+      if (playPromise) {
+        playPromise
+          .then(() => console.log("Audio playing"))
+          .catch(err => {
+            console.error("audio.play() rejected:", err)
+            setVoiceState('idle')
+            isVoiceQueryRef.current = false
+          })
+      }
+    } catch (err) {
+      console.error("speakAnswer error:", err)
       setVoiceState('idle')
       isVoiceQueryRef.current = false
     }

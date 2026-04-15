@@ -1,9 +1,9 @@
 import os
 import tempfile
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from supabase import create_client
 import vertexai
@@ -94,12 +94,21 @@ async def transcribe(audio: UploadFile = File(...)):
 @app.post("/speak")
 def speak(req: SpeakRequest):
     print(f"[speak] called, text length: {len(req.text)}")
-    # eleven_turbo_v2_5 is the fastest model as of 2025, lowest latency
-    print("[speak] calling ElevenLabs...")
-    audio_stream = elevenlabs_client.text_to_speech.convert_as_stream(
-        voice_id=os.getenv("ELEVENLABS_VOICE_ID"),
-        text=req.text,
-        model_id="eleven_turbo_v2_5"
-    )
-    print("[speak] streaming response back to client")
-    return StreamingResponse(audio_stream, media_type="audio/mpeg")
+    print(f"[speak] voice_id={os.getenv('ELEVENLABS_VOICE_ID')}")
+    try:
+        # Collect all chunks into a buffer before responding
+        # More reliable than StreamingResponse for CORS — headers are sent once, after all bytes are ready
+        audio_chunks = []
+        for chunk in elevenlabs_client.text_to_speech.convert_as_stream(
+            voice_id=os.getenv("ELEVENLABS_VOICE_ID"),
+            text=req.text,
+            model_id="eleven_turbo_v2_5"  # fastest model as of 2025
+        ):
+            if chunk:
+                audio_chunks.append(chunk)
+        audio_bytes = b"".join(audio_chunks)
+        print(f"[speak] done, {len(audio_bytes)} bytes")
+        return Response(content=audio_bytes, media_type="audio/mpeg")
+    except Exception as e:
+        print(f"[speak] ERROR: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
