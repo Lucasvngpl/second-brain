@@ -4,9 +4,7 @@ type Props = {
 }
 
 export default function RecentPanel({ history, onSelect }: Props) {
-  if (history.length === 0) return (
-    <div className="w-[160px] flex-shrink-0" />
-  )
+  if (history.length === 0) return null
 
   return (
     <div className="w-[160px] flex-shrink-0 flex flex-col gap-1">

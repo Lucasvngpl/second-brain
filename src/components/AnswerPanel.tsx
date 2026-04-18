@@ -27,7 +27,9 @@ function EmptyState() {
   const hh = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-2">
+    /* Full height of the content area — paddingBottom compensates for the search bar + status bar
+       above/below so the clock lands visually centered in the window */
+    <div className="flex-1 flex flex-col items-center justify-center gap-2" style={{ paddingBottom: 80, paddingRight: 40 }}>
       {/* Dot-grid card housing the clock — Nothing OS physical display aesthetic */}
       <div
         className="relative flex flex-col items-center justify-center gap-2 px-10 py-8 rounded-md"
@@ -41,7 +43,7 @@ function EmptyState() {
           className="leading-none select-none"
           style={{
             fontFamily: '"Doto", monospace',
-            fontSize: 64,
+            fontSize: 80,
             color: '#C8BEA8',
             letterSpacing: '-0.02em',
             fontWeight: 400,
@@ -51,8 +53,8 @@ function EmptyState() {
         </p>
       </div>
       <p
-        className="text-[12px] text-[#7A7060] select-none"
-        style={{ letterSpacing: '0.12em', marginTop: '8px' }}
+        className="text-[14px] select-none"
+        style={{ color: '#7A7060', letterSpacing: '0.12em', marginTop: '8px' }}
       >
         {getGreeting()}
       </p>
