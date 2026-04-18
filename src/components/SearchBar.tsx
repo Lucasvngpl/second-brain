@@ -47,12 +47,12 @@ export default function SearchBar({ onSearch, loading, voiceState, onMicClick }:
   }
 
   return (
-    <div className="px-5 pt-4 pb-3 border-b border-[#2E2B26]">
+    <div className="px-5 pt-4 pb-3">
       <div
         className="flex items-center gap-3 rounded-md transition-all"
         style={{
           background: "rgba(255,255,255,0.06)",
-          border: "0.5px solid #3A3630",
+          border: "0.5px solid rgba(255,255,255,0.08)",
           padding: "11px 14px",
         }}
       >

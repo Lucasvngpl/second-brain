@@ -99,7 +99,7 @@ def speak(req: SpeakRequest):
         # Collect all chunks into a buffer before responding
         # More reliable than StreamingResponse for CORS — headers are sent once, after all bytes are ready
         audio_chunks = []
-        for chunk in elevenlabs_client.text_to_speech.convert_as_stream(
+        for chunk in elevenlabs_client.text_to_speech.stream(
             voice_id=os.getenv("ELEVENLABS_VOICE_ID"),
             text=req.text,
             model_id="eleven_turbo_v2_5"  # fastest model as of 2025

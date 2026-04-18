@@ -10,13 +10,13 @@ export default function StatusBar({ backendOnline }: Props) {
     >
       {/* Left: live system readouts separated by · */}
       <div className="flex items-center gap-3 text-[9px] tracking-widest uppercase">
-        <span style={{ color: backendOnline ? '#4A463F' : '#8A5B5B' }}>
+        <span style={{ color: backendOnline ? '#7A7060' : '#8A5B5B' }}>
           {backendOnline ? 'Backend Connected' : 'Backend Offline'}
         </span>
-        <span className="text-[#2E2B26]">·</span>
-        <span className="text-[#4A463F]">36 Memories</span>
-        <span className="text-[#2E2B26]">·</span>
-        <span className="text-[#4A463F]">Last Synced · Notion</span>
+        <span style={{ color: '#2E2B26' }}>·</span>
+        <span style={{ color: '#7A7060' }}>36 Memories</span>
+        <span style={{ color: '#2E2B26' }}>·</span>
+        <span style={{ color: '#7A7060' }}>Last Synced · Notion</span>
       </div>
 
       {/* Right: version stamp — barely visible */}

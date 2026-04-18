@@ -82,7 +82,7 @@ export default function Sidebar({ activeSource, onSourceChange }: Props) {
                 {/* Active source: orange accent dot. Inactive: source's own color */}
                 <div
                   className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ background: active ? '#E8590C' : s.color }}
+                  style={{ background: active ? '#E8590C' : s.color, opacity: 1 }}
                 />
                 {expanded && (
                   <>
