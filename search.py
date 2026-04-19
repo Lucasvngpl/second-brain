@@ -110,5 +110,5 @@ def speak(req: SpeakRequest):
         print(f"[speak] done, {len(audio_bytes)} bytes")
         return Response(content=audio_bytes, media_type="audio/mpeg")
     except Exception as e:
-        print(f"[speak] ERROR: {e}")
-        return JSONResponse({"error": str(e)}, status_code=500)
+        print(f"[speak] ERROR ({type(e).__name__}): {e}")
+        return JSONResponse({"error": f"{type(e).__name__}: {e}"}, status_code=500)
