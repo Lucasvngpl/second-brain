@@ -1,26 +1,43 @@
+import { T } from "./ui"
+
 type Props = {
   backendOnline: boolean
+  count?: number
 }
 
-export default function StatusBar({ backendOnline }: Props) {
+// Bottom-of-window readout: live backend/memory/version strip in monospace.
+export default function StatusBar({ backendOnline, count = 36 }: Props) {
   return (
-    <div
-      className="flex-shrink-0 flex items-center justify-between px-4 h-7 border-t border-[#2E2B26]"
-      style={{ background: 'rgba(0,0,0,0.1)', fontFamily: "'JetBrains Mono', monospace" }}
-    >
-      {/* Left: live system readouts separated by · */}
-      <div className="flex items-center gap-3 text-[9px] tracking-widest uppercase">
-        <span style={{ color: backendOnline ? '#7A7060' : '#8A5B5B' }}>
-          {backendOnline ? 'Backend Connected' : 'Backend Offline'}
-        </span>
-        <span style={{ color: '#2E2B26' }}>·</span>
-        <span style={{ color: '#7A7060' }}>36 Memories</span>
-        <span style={{ color: '#2E2B26' }}>·</span>
-        <span style={{ color: '#7A7060' }}>Last Synced · Notion</span>
+    <div style={{
+      flexShrink: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '0 16px',
+      height: 28,
+      borderTop: `1px solid ${T.border}`,
+      background: T.card,
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: 9,
+      letterSpacing: '0.2em',
+      textTransform: 'uppercase',
+      fontWeight: 400,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{
+          width: 6,
+          height: 6,
+          borderRadius: 999,
+          background: backendOnline ? T.green : T.mute,
+          display: 'inline-block',
+        }} />
+        <span style={{ color: T.text3 }}>{backendOnline ? 'backend connected' : 'backend offline'}</span>
+        <span style={{ color: T.mute2 }}>·</span>
+        <span style={{ color: T.text3 }}>{count} memories</span>
+        <span style={{ color: T.mute2 }}>·</span>
+        <span style={{ color: T.text3 }}>last synced · notion</span>
       </div>
-
-      {/* Right: version stamp — barely visible */}
-      <span className="text-[9px] text-[#2E2B26] tracking-widest uppercase">v0.1.0</span>
+      <span style={{ color: T.mute }}>v0.1.4</span>
     </div>
   )
 }

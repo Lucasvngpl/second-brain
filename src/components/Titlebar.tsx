@@ -1,38 +1,36 @@
-import React from 'react'
+import type { CSSProperties } from 'react'
+import { T } from './ui'
 
+// Top window chrome. Electron paints the real macOS traffic lights at
+// { x: 18, y: 18 } (see app/main.js), so we just leave a 70px non-drag
+// spacer on the left so those clicks still land. The rest of the bar is
+// drag-enabled so the user can move the window by it.
 export default function Titlebar() {
   return (
-    <div
-      className="h-9 flex items-center px-5 border-b border-[#2E2B26] flex-shrink-0"
-      style={{ background: '#161412', WebkitAppRegion: 'drag' } as React.CSSProperties}
-    >
-      {/* 70px spacer — macOS traffic lights occupy this area (positioned by Electron) */}
-      <div className="w-[70px]" />
-
-      {/* JARVIS wordmark — centered */}
-      <span
-        className="flex-1 text-center text-[10px] tracking-[0.2em] uppercase text-[#4A463F]"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}
-      >
-        Jarvis
-      </span>
-
-      {/* ⌘K hint — far right, opt out of drag so it's clickable */}
+    <div style={{
+      height: 36,
+      flexShrink: 0,
+      background: T.card,
+      borderBottom: `1px solid ${T.border}`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      WebkitAppRegion: 'drag',
+    } as CSSProperties}>
+      {/* Reserved area for the native traffic lights */}
       <div
-        className="w-[70px] flex justify-end"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-      >
-        <span
-          className="text-[9px] text-[#2E2B26] px-1.5 py-0.5 rounded"
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            background: 'rgba(255,255,255,0.02)',
-            border: '0.5px solid #2E2B26',
-          }}
-        >
-          ⌘K
-        </span>
-      </div>
+        style={{ position: 'absolute', top: 0, left: 0, width: 70, height: '100%', WebkitAppRegion: 'no-drag' } as CSSProperties}
+      />
+
+      {/* JARVIS wordmark — monospace, heavily letter-spaced, muted */}
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 10,
+        letterSpacing: '0.22em',
+        color: T.text3,
+        fontWeight: 400,
+      }}>Second Brain</span>
     </div>
   )
 }

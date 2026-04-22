@@ -2,17 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design token reference — warm charcoal palette */
+/* Design token reference — light instrument-panel palette.
+   Tokens duplicated in src/components/ui.tsx (T object) for inline styles. */
 :root {
-  --bg-base:        #1C1A17;
-  --bg-surface:     #161412;
-  --border:         #2E2B26;
-  --border-subtle:  #2A2722;
-  --text-primary:   #C8BEA8;
-  --text-secondary: #7A7060;
-  --text-muted:     #4A463F;
-  --text-dim:       #2E2B26;
-  --accent:         #E8590C;
+  --bg:      #FAFAFA;
+  --card:    #FFFFFF;
+  --border:  #E5E5E5;
+  --text:    #000000;
+  --text2:   #5A5A5A;
+  --text3:   #8A8A8A;
+  --mute:    #BDBDBD;
+  --accent:  #E8590C;
 }
 
 * {
@@ -32,30 +32,18 @@ body {
   font-family: 'Inter', -apple-system, sans-serif;
   font-weight: 400;
   font-size: 13px;
-  color: #C8BEA8;
-  background: transparent; /* vibrancy is the background — never set an opaque color here */
+  color: #000;
+  /* Stay transparent so macOS vibrancy shows through — cards supply the cream surface. */
+  background: transparent;
 }
 
-/* Thin scrollbar for glass aesthetic */
+/* Thin scrollbar */
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
-
-/* Mic button pulses its border-glow while recording */
-@keyframes micPulse {
-  0%, 100% { box-shadow: 0 0 0 0px rgba(232,89,12,0.5); }
-  50%       { box-shadow: 0 0 0 6px rgba(232,89,12,0); }
-}
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 2px; }
 
 /* Radar-sweep arc around the processing orb */
-@keyframes orbSweep {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
+@keyframes jvl-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-/* Transcript text fades in when it arrives */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
+/* Generic spinner — used by the processing mic icon and answer-panel "thinking" ring */
+@keyframes jvl-spin  { to { transform: rotate(360deg); } }

@@ -1,4 +1,6 @@
 import { useState, useRef } from "react"
+import { T } from "./components/ui"
+import Titlebar from "./components/Titlebar.tsx"
 import Sidebar from "./components/Sidebar"
 import SearchBar from "./components/SearchBar.tsx"
 import AnswerPanel from "./components/AnswerPanel.tsx"
@@ -268,49 +270,57 @@ export default function App() {
   }
 
   return (
-    /* Full-screen canvas — bg-transparent lets Electron vibrancy show through */
-    <div className="h-screen w-screen overflow-hidden relative bg-transparent">
+    /* Full-screen canvas painted in #FAFAFA so the window reads as one solid
+       surface. Electron vibrancy is still active under the hood but hidden
+       behind this opaque fill — matches the Claude Design light kit. */
+    <div style={{
+      height: '100vh',
+      width: '100vw',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      background: T.bg,
+      minHeight: 0,
+    }}>
+      <Titlebar />
 
-      {/* THE ONE BIG GLASS CARD — edge-to-edge, macOS handles rounding via roundedCorners */}
-      <div className="absolute inset-0 flex flex-col overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <Sidebar activeSource={activeSource} onSourceChange={setActiveSource} />
 
-        {/* Main row: sidebar + content */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar — drag region at top clears macOS traffic lights */}
-          <Sidebar activeSource={activeSource} onSourceChange={setActiveSource} />
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+          <SearchBar
+            onSearch={handleSearch}
+            voiceState={voiceState}
+            onMicClick={handleMicClick}
+          />
 
-          <div className="flex flex-col flex-1 min-w-0" style={{ paddingTop: '28px' }}>
-            <div style={{ marginTop: '8px' }}>
-              <SearchBar
-                onSearch={handleSearch}
-                loading={loading}
-                voiceState={voiceState}
-                onMicClick={handleMicClick}
+          {/* Center — VoiceOverlay replaces AnswerPanel during voice interaction */}
+          <div style={{
+            display: 'flex',
+            flex: 1,
+            gap: 14,
+            padding: '10px 20px 20px',
+            overflow: 'hidden',
+            minHeight: 0,
+          }}>
+            {voiceState !== 'idle' ? (
+              <VoiceOverlay
+                state={voiceState}
+                transcript={transcript}
+                analyser={analyserRef.current}
+                onCancel={cancelVoice}
               />
-            </div>
-
-            {/* Center area — VoiceOverlay replaces AnswerPanel during voice interaction */}
-            <div className="flex flex-1 gap-4 p-5 overflow-hidden">
-              {voiceState !== 'idle' ? (
-                <VoiceOverlay
-                  state={voiceState}
-                  transcript={transcript}
-                  analyser={analyserRef.current}
-                  onCancel={cancelVoice}
-                />
-              ) : (
-                <>
-                  <AnswerPanel result={result} loading={loading} />
-                  <RecentPanel history={history} onSelect={handleSearch} />
-                </>
-              )}
-            </div>
+            ) : (
+              <>
+                <AnswerPanel result={result} loading={loading} />
+                {result && <RecentPanel history={history} onSelect={handleSearch} />}
+              </>
+            )}
           </div>
         </div>
-
-        {/* Status bar — 28px live system readout at window bottom */}
-        <StatusBar backendOnline={backendOnline} />
       </div>
+
+      <StatusBar backendOnline={backendOnline} count={36} />
     </div>
   )
 }
