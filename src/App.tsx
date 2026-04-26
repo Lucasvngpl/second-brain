@@ -53,7 +53,10 @@ export default function App() {
       const res = await fetch("http://localhost:8000/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: query })
+        body: JSON.stringify({ 
+          text: query,
+          source: activeSource === "all" ? null : activeSource
+        })
       })
       const data = await res.json()
       setResult(data)

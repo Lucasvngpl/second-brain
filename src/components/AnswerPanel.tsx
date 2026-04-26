@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import type { SearchResult } from "../App"
 import SourceCard from "./SourceCard"
+import PhotoResults from "./PhotoResults"
 import { T, Tile, BlockBar, DotClock } from "./ui"
 
 type Props = {
@@ -171,6 +172,11 @@ export default function AnswerPanel({ result, loading }: Props) {
 
   if (!result) return <EmptyState />
 
+  // Split photo sources from everything else so we can render the kit's
+  // photo grid for images and keep the SourceCard list for text-based hits.
+  const photoSources = result.sources.filter(s => s.source === 'photos')
+  const otherSources = result.sources.filter(s => s.source !== 'photos')
+
   return (
     <div style={{
       flex: 1,
@@ -208,30 +214,37 @@ export default function AnswerPanel({ result, loading }: Props) {
         }}>{stripMarkdown(result.answer)}</div>
       </div>
 
-      {/* Sources header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 2px 0' }}>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 9,
-          letterSpacing: '0.22em',
-          textTransform: 'uppercase',
-          color: T.text3,
-          fontWeight: 400,
-        }}>sources</span>
-        <span style={{ color: T.mute2 }}>·</span>
-        <span style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 9,
-          letterSpacing: '0.22em',
-          textTransform: 'uppercase',
-          color: T.mute,
-          fontWeight: 400,
-        }}>{result.sources.length} matched</span>
-      </div>
+      {/* Photo grid — only when results include photos */}
+      {photoSources.length > 0 && <PhotoResults sources={photoSources} />}
 
-      {result.sources.map((source, i) => (
-        <SourceCard key={i} source={source} />
-      ))}
+      {/* Non-photo sources keep the existing card list */}
+      {otherSources.length > 0 && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 2px 0' }}>
+            <span style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+              color: T.text3,
+              fontWeight: 400,
+            }}>sources</span>
+            <span style={{ color: T.mute2 }}>·</span>
+            <span style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+              color: T.mute,
+              fontWeight: 400,
+            }}>{otherSources.length} matched</span>
+          </div>
+
+          {otherSources.map((source, i) => (
+            <SourceCard key={i} source={source} />
+          ))}
+        </>
+      )}
     </div>
   )
 }

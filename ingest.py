@@ -76,3 +76,7 @@ def ingest_notion():
 
 if __name__ == "__main__":
     ingest_notion()
+
+    # Optionally run photos ingestion
+    # from sources.photos import ingest_photos
+    # ingest_photos(limit=50)
