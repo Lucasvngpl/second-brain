@@ -106,12 +106,13 @@ export default function App() {
 
       console.log("Audio created, attempting play")
 
-      // Return to results view when audio finishes
+      // Continuous conversation: when Bella finishes, re-open the mic so the
+      // user can ask a follow-up without tapping. isVoiceQueryRef stays true
+      // so the next answer is also spoken. Exit by tapping mic in 'listening'
+      // — that calls cancelVoice() which resets the flag and goes to 'idle'.
       audio.onended = () => {
-        console.log("Audio ended")
-        setVoiceState('idle')
-        isVoiceQueryRef.current = false
         URL.revokeObjectURL(url)
+        startRecording()
       }
 
       audio.onerror = (e) => {
@@ -141,7 +142,16 @@ export default function App() {
   // ── Voice: start recording ───────────────────────────────────────────────
   async function startRecording() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      // Echo cancellation subtracts speaker output from the mic signal, so
+      // Bella's voice doesn't get re-transcribed when the user asks a follow-up.
+      // Noise suppression and AGC clean up cafe/keyboard noise + level swings.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
 
       // Set up Web Audio analyser for silence detection + waveform visualisation
       const audioContext = new AudioContext()
@@ -194,8 +204,12 @@ export default function App() {
       }, 100)
 
     } catch (err) {
-      // User denied mic or device unavailable — stay idle
+      // User denied mic or device unavailable — fall back to idle so the
+      // orb resets (matters for the continuous-conversation auto-restart,
+      // which lands here if the OS revokes permission mid-session).
       console.warn('Mic access denied or unavailable', err)
+      setVoiceState('idle')
+      isVoiceQueryRef.current = false
     }
   }
 
@@ -311,6 +325,7 @@ export default function App() {
                 state={voiceState}
                 transcript={transcript}
                 analyser={analyserRef.current}
+                photos={result?.sources.filter(s => s.source === 'photos') ?? []}
                 onCancel={cancelVoice}
               />
             ) : (

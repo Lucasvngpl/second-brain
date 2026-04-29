@@ -23,11 +23,12 @@ export const T = {
 
 // ─── Source registry (shared between Sidebar and AnswerPanel) ───────────────
 export const SOURCES = [
-  { id: 'all',    label: 'all',    count: '36' as string | null,  color: T.text2 },
-  { id: 'notion', label: 'notion', count: '36' as string | null,  color: T.notion },
-  { id: 'gmail',  label: 'gmail',  count: null  as string | null, color: '#8A5B5B' },
-  { id: 'photos', label: 'photos', count: '184' as string | null, color: '#8A7A5B' },
-  { id: 'audio',  label: 'audio',  count: null  as string | null, color: '#5B6E8A' },
+  { id: 'all',         label: 'all',         count: '36' as string | null,  color: T.text2 },
+  { id: 'notion',      label: 'notion',      count: '36' as string | null,  color: T.notion },
+  { id: 'apple_notes', label: 'apple_notes', count: '65' as string | null,  color: T.amber },
+  { id: 'gmail',       label: 'gmail',       count: null as string | null,  color: '#8A5B5B' },
+  { id: 'photos',      label: 'photos',      count: '184' as string | null, color: '#8A7A5B' },
+  { id: 'audio',       label: 'audio',       count: null as string | null,  color: '#5B6E8A' },
 ]
 
 // ─── Tile ────────────────────────────────────────────────────────────────────

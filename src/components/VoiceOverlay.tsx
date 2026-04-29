@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import type { Source } from "../App"
 import { T } from "./ui"
 
 type VoiceState = 'listening' | 'processing' | 'speaking'
@@ -7,6 +8,7 @@ type Props = {
   state: VoiceState
   transcript: string               // shown during processing + speaking
   analyser: AnalyserNode | null    // Web Audio analyser — null while speaking
+  photos: Source[]                 // photo sources to show under the orb while speaking
   onCancel: () => void             // click anywhere to cancel
 }
 
@@ -97,11 +99,14 @@ function RecordingTimer() {
 }
 
 // ─── VoiceOverlay ────────────────────────────────────────────────────────────
-export default function VoiceOverlay({ state, transcript, analyser, onCancel }: Props) {
+export default function VoiceOverlay({ state, transcript, analyser, photos, onCancel }: Props) {
   // Capture waveform heights as we transition listening → processing so the
   // bars appear "paused" at the last real reading rather than snapping away.
   const frozenHeightsRef = useRef<number[]>([])
   const [frozenHeights, setFrozenHeights] = useState<number[]>([])
+
+  // Lightbox preview — clicked thumb's uuid, or null when nothing's open.
+  const [previewUuid, setPreviewUuid] = useState<string | null>(null)
 
   useEffect(() => {
     if (state === 'processing' && frozenHeightsRef.current.length > 0) {
@@ -242,6 +247,77 @@ export default function VoiceOverlay({ state, transcript, analyser, onCancel }: 
           lineHeight: 1.55,
           textAlign: 'center',
         }}>{transcript}</p>
+      )}
+
+      {/* Photo strip — only while Jarvis is speaking, only if photos came
+          back. Click a thumb to open a centered lightbox preview. */}
+      {state === 'speaking' && photos.length > 0 && (
+        <div style={{
+          marginTop: 26,
+          display: 'flex',
+          gap: 12,
+          justifyContent: 'center',
+          maxWidth: 640,
+          flexWrap: 'wrap',
+        }}>
+          {photos.slice(0, 4).map((p, i) => {
+            const uuid = p.url.replace(/^photos:\/\//, "")
+            return (
+              <img
+                key={i}
+                src={`http://localhost:8000/photo/${uuid}`}
+                alt={p.title}
+                loading="lazy"
+                onClick={(e) => {
+                  // Don't let the click bubble to the parent's onCancel.
+                  e.stopPropagation()
+                  setPreviewUuid(uuid)
+                }}
+                style={{
+                  width: 140,
+                  height: 140,
+                  borderRadius: 10,
+                  objectFit: 'cover',
+                  border: `1px solid ${T.border}`,
+                  background: T.card,
+                  cursor: 'zoom-in',
+                  transition: 'transform 120ms ease',
+                }}
+              />
+            )
+          })}
+        </div>
+      )}
+
+      {/* Lightbox — full-window dim backdrop with the clicked image centered.
+          stopPropagation everywhere so neither the backdrop nor the image
+          can fire the parent overlay's onCancel. Click backdrop to close. */}
+      {previewUuid && (
+        <div
+          onClick={(e) => { e.stopPropagation(); setPreviewUuid(null) }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.78)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            cursor: 'zoom-out',
+          }}
+        >
+          <img
+            src={`http://localhost:8000/photo/${previewUuid}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '92vw',
+              maxHeight: '92vh',
+              borderRadius: 12,
+              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5)',
+              cursor: 'default',
+            }}
+          />
+        </div>
       )}
 
       {state === 'listening' && <RecordingTimer />}
