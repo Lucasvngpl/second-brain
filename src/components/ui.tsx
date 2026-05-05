@@ -22,14 +22,16 @@ export const T = {
 } as const
 
 // ─── Source registry (shared between Sidebar and AnswerPanel) ───────────────
+// Counts live on the live Stats payload (see src/lib/stats.ts) — this registry
+// is just identity + color so both surfaces stay in lockstep on naming.
 export const SOURCES = [
-  { id: 'all',         label: 'all',         count: '36' as string | null,  color: T.text2 },
-  { id: 'notion',      label: 'notion',      count: '36' as string | null,  color: T.notion },
-  { id: 'apple_notes', label: 'apple_notes', count: '65' as string | null,  color: T.amber },
-  { id: 'gmail',       label: 'gmail',       count: null as string | null,  color: '#8A5B5B' },
-  { id: 'photos',      label: 'photos',      count: '184' as string | null, color: '#8A7A5B' },
-  { id: 'audio',       label: 'audio',       count: null as string | null,  color: '#5B6E8A' },
-]
+  { id: 'all',         label: 'all',         color: T.text2 },
+  { id: 'notion',      label: 'notion',      color: T.notion },
+  { id: 'apple_notes', label: 'apple_notes', color: T.amber },
+  { id: 'gmail',       label: 'gmail',       color: '#8A5B5B' },
+  { id: 'photos',      label: 'photos',      color: '#8A7A5B' },
+  { id: 'audio',       label: 'audio',       color: '#5B6E8A' },
+] as const
 
 // ─── Tile ────────────────────────────────────────────────────────────────────
 // Uniform bordered container used across the dashboard. `dotGrid` paints the

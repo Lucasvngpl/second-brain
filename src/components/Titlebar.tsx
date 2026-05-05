@@ -8,7 +8,7 @@ import { T } from './ui'
 export default function Titlebar() {
   return (
     <div style={{
-      height: 36,
+      height: 42,
       flexShrink: 0,
       background: T.card,
       borderBottom: `1px solid ${T.border}`,

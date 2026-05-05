@@ -7,6 +7,7 @@ import AnswerPanel from "./components/AnswerPanel.tsx"
 import RecentPanel from "./components/RecentPanel.tsx"
 import StatusBar from "./components/StatusBar.tsx"
 import VoiceOverlay from "./components/VoiceOverlay.tsx"
+import { useStats } from "./lib/stats"
 
 export type Source = {
   title: string
@@ -21,7 +22,7 @@ export type SearchResult = {
   sources: Source[]
 }
 
-type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
+export type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
 export default function App() {
   const [result, setResult] = useState<SearchResult | null>(null)
@@ -29,6 +30,10 @@ export default function App() {
   const [history, setHistory] = useState<string[]>([])
   const [activeSource, setActiveSource] = useState("all")
   const [backendOnline, setBackendOnline] = useState(true)
+
+  // Live dashboard readouts. Re-fires when backendOnline flips back to true so
+  // the dashboard catches up the moment the backend comes back.
+  const stats = useStats(backendOnline)
 
   // ── Voice state ─────────────────────────────────────────────────────────
   const [voiceState, setVoiceState] = useState<VoiceState>('idle')
@@ -42,6 +47,9 @@ export default function App() {
   const silenceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  // Tracks the currently-playing Bella audio so we can pause it mid-sentence
+  // when the user opts out of conversation mode.
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null)
 
   // ── Search ───────────────────────────────────────────────────────────────
   async function handleSearch(query: string) {
@@ -53,9 +61,13 @@ export default function App() {
       const res = await fetch("http://localhost:8000/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           text: query,
-          source: activeSource === "all" ? null : activeSource
+          source: activeSource === "all" ? null : activeSource,
+          // Tells the backend to keep the answer short enough that TTS
+          // doesn't run for a minute. Read once here so a follow-up
+          // typed query doesn't accidentally inherit voice brevity.
+          voice: isVoiceQueryRef.current,
         })
       })
       const data = await res.json()
@@ -103,15 +115,17 @@ export default function App() {
       const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
       const url = URL.createObjectURL(blob)
       const audio = new Audio(url)
+      currentAudioRef.current = audio
 
       console.log("Audio created, attempting play")
 
       // Continuous conversation: when Bella finishes, re-open the mic so the
       // user can ask a follow-up without tapping. isVoiceQueryRef stays true
       // so the next answer is also spoken. Exit by tapping mic in 'listening'
-      // — that calls cancelVoice() which resets the flag and goes to 'idle'.
+      // (cancelVoice) or by tapping "view as text" in the overlay (exitToText).
       audio.onended = () => {
         URL.revokeObjectURL(url)
+        currentAudioRef.current = null
         startRecording()
       }
 
@@ -120,6 +134,7 @@ export default function App() {
         setVoiceState('idle')
         isVoiceQueryRef.current = false
         URL.revokeObjectURL(url)
+        currentAudioRef.current = null
       }
 
       const playPromise = audio.play()
@@ -269,11 +284,33 @@ export default function App() {
       mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop())
     }
 
+    // Stop Bella mid-sentence if she's still talking. Without this the audio
+    // keeps playing in the background even after the overlay closes.
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause()
+      currentAudioRef.current = null
+    }
+
     audioContextRef.current?.close()
     analyserRef.current = null
     isVoiceQueryRef.current = false
     setVoiceState('idle')
     setTranscript('')
+  }
+
+  // Leave conversation mode but keep the result on screen. Same teardown as
+  // cancelVoice — only difference is intent: cancelVoice abandons mid-query,
+  // exitToText is the "I have my answer, show me the written version" exit.
+  function exitToText() {
+    cancelVoice()
+  }
+
+  // Reset back to the empty-state dashboard. Recent history is preserved so
+  // the user can reopen prior queries from the recent panel.
+  function goHome() {
+    if (voiceState !== 'idle') cancelVoice()
+    setResult(null)
+    setActiveSource('all')
   }
 
   // ── Mic button handler — toggle between start and cancel ─────────────────
@@ -302,7 +339,12 @@ export default function App() {
       <Titlebar />
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <Sidebar activeSource={activeSource} onSourceChange={setActiveSource} />
+        <Sidebar
+          activeSource={activeSource}
+          onSourceChange={setActiveSource}
+          counts={stats?.by_source ?? {}}
+          onHome={goHome}
+        />
 
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
           <SearchBar
@@ -327,10 +369,19 @@ export default function App() {
                 analyser={analyserRef.current}
                 photos={result?.sources.filter(s => s.source === 'photos') ?? []}
                 onCancel={cancelVoice}
+                onExitToText={exitToText}
+                hasResult={result !== null}
               />
             ) : (
               <>
-                <AnswerPanel result={result} loading={loading} />
+                <AnswerPanel
+                  result={result}
+                  loading={loading}
+                  stats={stats}
+                  backendOnline={backendOnline}
+                  voiceState={voiceState}
+                  onPromptSelect={handleSearch}
+                />
                 {result && <RecentPanel history={history} onSelect={handleSearch} />}
               </>
             )}
@@ -338,7 +389,11 @@ export default function App() {
         </div>
       </div>
 
-      <StatusBar backendOnline={backendOnline} count={36} />
+      <StatusBar
+        backendOnline={backendOnline}
+        count={stats?.total ?? 0}
+        lastSyncedSource={stats?.latest?.source ?? null}
+      />
     </div>
   )
 }

@@ -10,6 +10,8 @@ type Props = {
   analyser: AnalyserNode | null    // Web Audio analyser — null while speaking
   photos: Source[]                 // photo sources to show under the orb while speaking
   onCancel: () => void             // click anywhere to cancel
+  onExitToText: () => void         // "view as text" — keep result, leave conversation mode
+  hasResult: boolean               // gates the exit-to-text button until an answer exists
 }
 
 const BAR_COUNT = 32
@@ -99,7 +101,7 @@ function RecordingTimer() {
 }
 
 // ─── VoiceOverlay ────────────────────────────────────────────────────────────
-export default function VoiceOverlay({ state, transcript, analyser, photos, onCancel }: Props) {
+export default function VoiceOverlay({ state, transcript, analyser, photos, onCancel, onExitToText, hasResult }: Props) {
   // Capture waveform heights as we transition listening → processing so the
   // bars appear "paused" at the last real reading rather than snapping away.
   const frozenHeightsRef = useRef<number[]>([])
@@ -321,6 +323,48 @@ export default function VoiceOverlay({ state, transcript, analyser, photos, onCa
       )}
 
       {state === 'listening' && <RecordingTimer />}
+
+      {/* Exit-to-text affordance — visible once an answer exists, so the user
+          can drop out of conversation mode and read the synthesized answer
+          plus its source cards. stopPropagation keeps the parent's onCancel
+          from also firing on click. */}
+      {hasResult && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onExitToText() }}
+          style={{
+            all: 'unset',
+            position: 'absolute',
+            bottom: 16,
+            right: 20,
+            cursor: 'pointer',
+            padding: '8px 12px',
+            borderRadius: 999,
+            border: `1px solid ${T.border}`,
+            background: T.card,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 9,
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+            color: T.text3,
+            fontWeight: 400,
+            transition: 'border-color 150ms, color 150ms',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = T.text3
+            e.currentTarget.style.color = T.text
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = T.border
+            e.currentTarget.style.color = T.text3
+          }}
+        >
+          view as text
+          <span style={{ fontSize: 11, lineHeight: 1 }}>→</span>
+        </button>
+      )}
     </div>
   )
 }

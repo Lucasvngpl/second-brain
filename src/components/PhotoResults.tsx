@@ -1,3 +1,4 @@
+import { useState } from "react"
 import type { Source } from "../App"
 import { T } from "./ui"
 
@@ -16,18 +17,22 @@ function shortName(filename: string) {
 // Single thumbnail — matches ScreensLight.jsx PhotoThumb chrome (rounded card,
 // border, filename top-left, similarity bottom-right in orange) but with a
 // real <img> instead of the kit's SVG placeholder.
-function PhotoThumb({ source }: { source: Source }) {
+function PhotoThumb({ source, onOpen }: { source: Source; onOpen: (uuid: string) => void }) {
   const uuid = uuidFromUrl(source.url)
   const sim = Math.round(source.similarity * 100)
   return (
-    <div style={{
-      position: "relative",
-      borderRadius: 8,
-      overflow: "hidden",
-      border: `1px solid ${T.border}`,
-      background: T.card,
-      aspectRatio: "4 / 3",
-    }}>
+    <div
+      onClick={() => onOpen(uuid)}
+      style={{
+        position: "relative",
+        borderRadius: 8,
+        overflow: "hidden",
+        border: `1px solid ${T.border}`,
+        background: T.card,
+        aspectRatio: "4 / 3",
+        cursor: "zoom-in",
+      }}
+    >
       <img
         src={`http://localhost:8000/photo/${uuid}`}
         alt={source.title}
@@ -61,6 +66,11 @@ function PhotoThumb({ source }: { source: Source }) {
 // Photo grid section — "photos · N results" header followed by a 4-col grid.
 // Owns its own scroll so non-photo SourceCards beneath stay docked.
 export default function PhotoResults({ sources }: { sources: Source[] }) {
+  // Lightbox preview — clicked thumb's uuid, or null when nothing's open.
+  // Mirrors the affordance VoiceOverlay already has, so clicking a photo
+  // does the same thing whether you're in voice mode or text mode.
+  const [previewUuid, setPreviewUuid] = useState<string | null>(null)
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 2px 0" }}>
@@ -87,8 +97,38 @@ export default function PhotoResults({ sources }: { sources: Source[] }) {
         gridTemplateColumns: "repeat(4, 1fr)",
         gap: 10,
       }}>
-        {sources.map((s, i) => <PhotoThumb key={i} source={s} />)}
+        {sources.map((s, i) => <PhotoThumb key={i} source={s} onOpen={setPreviewUuid} />)}
       </div>
+
+      {/* Lightbox — full-window dim backdrop with the clicked image centered.
+          Click the backdrop to close. */}
+      {previewUuid && (
+        <div
+          onClick={() => setPreviewUuid(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.78)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            cursor: "zoom-out",
+          }}
+        >
+          <img
+            src={`http://localhost:8000/photo/${previewUuid}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "92vw",
+              maxHeight: "92vh",
+              borderRadius: 12,
+              boxShadow: "0 24px 64px rgba(0, 0, 0, 0.5)",
+              cursor: "default",
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }

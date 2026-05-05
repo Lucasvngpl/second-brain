@@ -2,11 +2,14 @@ import { T } from "./ui"
 
 type Props = {
   backendOnline: boolean
-  count?: number
+  count: number
+  // Source name of the most recently indexed memory (e.g. "notion") or null
+  // when stats haven't loaded yet — falls back to an em-dash in that case.
+  lastSyncedSource: string | null
 }
 
 // Bottom-of-window readout: live backend/memory/version strip in monospace.
-export default function StatusBar({ backendOnline, count = 36 }: Props) {
+export default function StatusBar({ backendOnline, count, lastSyncedSource }: Props) {
   return (
     <div style={{
       flexShrink: 0,
@@ -35,7 +38,7 @@ export default function StatusBar({ backendOnline, count = 36 }: Props) {
         <span style={{ color: T.mute2 }}>·</span>
         <span style={{ color: T.text3 }}>{count} memories</span>
         <span style={{ color: T.mute2 }}>·</span>
-        <span style={{ color: T.text3 }}>last synced · notion</span>
+        <span style={{ color: T.text3 }}>last synced · {lastSyncedSource ?? '—'}</span>
       </div>
       <span style={{ color: T.mute }}>v0.1.4</span>
     </div>

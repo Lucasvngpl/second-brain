@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import math
 import os
 import tempfile
 from dotenv import load_dotenv
@@ -38,6 +39,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 class Query(BaseModel):
     text: str          # the search query from the user
     source: str | None = None  # optional source filter: 'photos', 'notion', 'gmail', 'gcal', or None
+    voice: bool = False  # query came from the mic — answer should stay short enough for TTS to feel snappy
 
 class SpeakRequest(BaseModel):
     text: str  # answer text to be spoken
@@ -124,6 +126,38 @@ Return ONLY a JSON object — no prose, no code fences — with these fields:
         raw_preview = locals().get("raw", "<no response>")
         print(f"[analyze_query] failed: {type(e).__name__}: {e} | raw={raw_preview!r}")
         return {"source": None, "embed_query": query_text, "keywords": []}
+
+
+def _parse_embedding(raw) -> list[float] | None:
+    """pgvector comes back as a JSON-serialized "[v1,v2,...]" string, but the
+    Python client may also hand it over as a list. Handle both shapes; return
+    None if the value is missing or unparseable."""
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, str):
+        try:
+            return json.loads(raw)
+        except Exception:
+            return None
+    return None
+
+
+def _cosine_sim(a: list[float], b: list[float]) -> float:
+    """Standard cosine similarity. Vertex multimodal embeddings are already
+    L2-normalized so dot product would suffice, but we compute the full form
+    to stay correct if that ever changes."""
+    if not a or not b or len(a) != len(b):
+        return 0.0
+    dot = 0.0
+    na = 0.0
+    nb = 0.0
+    for x, y in zip(a, b):
+        dot += x * y
+        na += x * x
+        nb += y * y
+    if na == 0.0 or nb == 0.0:
+        return 0.0
+    return dot / (math.sqrt(na) * math.sqrt(nb))
 
 
 def caption_top_photo(query_text: str, photo_url: str) -> str | None:
@@ -238,7 +272,7 @@ def search(query: Query):
             for kw in keywords[:3]:
                 rows = (
                     supabase.table("memories")
-                    .select("source, title, content, url")
+                    .select("source, title, content, url, embedding")
                     .eq("source", effective_source)
                     .ilike("content", f"%{kw}%")
                     .limit(5)
@@ -250,7 +284,11 @@ def search(query: Query):
                     if key in seen:
                         continue
                     seen.add(key)
-                    row["similarity"] = 0.0  # no semantic score; judge will rank
+                    # Compute the same cosine score the RPC would have given
+                    # this row, so the UI shows a real percentage instead of
+                    # 0% on keyword-only hits.
+                    emb = _parse_embedding(row.pop("embedding", None))
+                    row["similarity"] = _cosine_sim(embedding, emb) if emb else 0.0
                     sources.append(row)
     else:
         # Mixed mode — split by modality so photos aren't drowned out by
@@ -274,7 +312,7 @@ def search(query: Query):
             for kw in keywords[:3]:
                 rows = (
                     supabase.table("memories")
-                    .select("source, title, content, url")
+                    .select("source, title, content, url, embedding")
                     .neq("source", "photos")
                     .ilike("content", f"%{kw}%")
                     .limit(5)
@@ -286,7 +324,8 @@ def search(query: Query):
                     if key in seen:
                         continue
                     seen.add(key)
-                    row["similarity"] = 0.0
+                    emb = _parse_embedding(row.pop("embedding", None))
+                    row["similarity"] = _cosine_sim(embedding, emb) if emb else 0.0
                     sources.append(row)
 
     # Diagnostic — confirm how many rows came back vs. survived the filter
@@ -397,10 +436,32 @@ def search(query: Query):
             "so the user knows to glance at the panel."
             if photo_count > 0 else ""
         )
+        # Voice mode: keep the answer short. ElevenLabs reads every word, and a
+        # multi-paragraph response turns into a 90s monologue. Two sentences
+        # max, ~50 words, no markdown — natural spoken pacing.
+        if query.voice:
+            synthesis_system = (
+                "You are Jarvis, a personal AI second brain answering by voice. "
+                "Reply in at most TWO short sentences (~50 words total). Be "
+                "conversational and chill, like a friend texting back — no lists, "
+                "no markdown, no preamble. If the context doesn't contain the "
+                "answer, say so in one sentence."
+            )
+            synthesis_max_tokens = 180
+        else:
+            synthesis_system = (
+                "You are Jarvis, a personal AI second brain. Answer the user's "
+                "question using only the context provided. Speak in a natural, "
+                "conversational chill and cool voice, not bullet lists or section "
+                "headers. If the context doesn't contain the answer, say so "
+                "honestly rather than speculating."
+            )
+            synthesis_max_tokens = 1024
+
         response = claude.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=1024,
-            system="You are Jarvis, a personal AI second brain. Answer the user's question using only the context provided. Speak in a natural, conversational chill and cool voice, not bullet lists or section headers. If the context doesn't contain the answer, say so honestly rather than speculating.",
+            max_tokens=synthesis_max_tokens,
+            system=synthesis_system,
             messages=[{
                 "role": "user",
                 "content": f"Context from my second brain:\n\n{context}\n\nQuestion: {query.text}{photo_hint}"
@@ -414,6 +475,43 @@ def search(query: Query):
     return {
         "answer": answer,
         "sources": filtered_sources
+    }
+
+
+_STATS_SOURCES = ["notion", "apple_notes", "photos", "gmail", "gcal", "audio"]
+
+
+@app.get("/stats")
+def stats():
+    # Counts use Supabase's exact-count header instead of pulling rows —
+    # PostgREST's default 1000-row page would otherwise truncate the corpus
+    # (and we'd silently drop sources past the cutoff). One cheap count query
+    # per known source + one for "latest" beats fetching everything.
+    by_source: dict[str, int] = {}
+    for src in _STATS_SOURCES:
+        r = (
+            supabase.table("memories")
+            .select("id", count="exact")
+            .eq("source", src)
+            .limit(1)
+            .execute()
+        )
+        if r.count:
+            by_source[src] = r.count
+
+    latest_rows = (
+        supabase.table("memories")
+        .select("source, title, created_at")
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+        .data
+    )
+
+    return {
+        "total": sum(by_source.values()),
+        "by_source": by_source,
+        "latest": latest_rows[0] if latest_rows else None,
     }
 
 
@@ -483,7 +581,10 @@ def speak(req: SpeakRequest):
         for chunk in elevenlabs_client.text_to_speech.stream(
             voice_id=os.getenv("ELEVENLABS_VOICE_ID"),
             text=req.text,
-            model_id="eleven_turbo_v2_5"  # fastest model as of 2025
+            model_id="eleven_turbo_v2_5",  # fastest model as of 2025
+            # Speed > 1 talks faster without raising pitch. 1.15 lands at a
+            # confident, energetic pace without sounding chipmunked.
+            voice_settings={"stability": 0.5, "similarity_boost": 0.75, "speed": 1.10},
         ):
             if chunk:
                 audio_chunks.append(chunk)
