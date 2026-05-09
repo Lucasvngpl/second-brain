@@ -146,7 +146,7 @@ export default function VoiceOverlay({ state, transcript, analyser, photos, onCa
   const waveColor = state === 'speaking' ? T.text : T.orange
   const waveInt = state === 'speaking' ? 180 : 120
 
-  const label = state === 'listening' ? 'listening' : state === 'processing' ? 'processing' : 'jarvis'
+  const label = state === 'listening' ? 'listening' : state === 'processing' ? 'processing' : 'second brain'
   const labelColor = state === 'speaking' ? T.text : state === 'processing' ? T.text3 : T.orange
 
   return (

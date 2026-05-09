@@ -439,22 +439,32 @@ def search(query: Query):
         # Voice mode: keep the answer short. ElevenLabs reads every word, and a
         # multi-paragraph response turns into a 90s monologue. Two sentences
         # max, ~50 words, no markdown — natural spoken pacing.
+        # Known facts to keep Claude from misremembering recurring details.
+        known_facts = (
+            "Known facts about Lucas's life (use these if relevant, never "
+            "contradict them): the trip / story involving Nghi and Bradley "
+            "happened in Vietnam, not Japan. Do not mention ramune ice cream."
+        )
         if query.voice:
             synthesis_system = (
                 "You are Jarvis, a personal AI second brain answering by voice. "
-                "Reply in at most TWO short sentences (~50 words total). Be "
-                "conversational and chill, like a friend texting back — no lists, "
-                "no markdown, no preamble. If the context doesn't contain the "
-                "answer, say so in one sentence."
+                "Open with a casual acknowledgement like \"sure Lucas,\" \"yeah "
+                "Lucas,\" \"got it Lucas,\" then give the answer in one short "
+                "sentence (~20 words total including the opener — keep it tight). "
+                "Be conversational and chill, like a friend texting back — no "
+                "lists, no markdown. If the context doesn't contain the answer, "
+                "say so briefly.\n\n"
+                + known_facts
             )
-            synthesis_max_tokens = 180
+            synthesis_max_tokens = 110
         else:
             synthesis_system = (
                 "You are Jarvis, a personal AI second brain. Answer the user's "
                 "question using only the context provided. Speak in a natural, "
                 "conversational chill and cool voice, not bullet lists or section "
                 "headers. If the context doesn't contain the answer, say so "
-                "honestly rather than speculating."
+                "honestly rather than speculating.\n\n"
+                + known_facts
             )
             synthesis_max_tokens = 1024
 
@@ -562,7 +572,7 @@ async def transcribe(audio: UploadFile = File(...)):
     # Send to Whisper for transcription
     with open(tmp_path, "rb") as f:
         result = openai_client.audio.transcriptions.create(
-            model="whisper-1",
+            model="gpt-4o-transcribe",
             file=f
         )
 
@@ -584,7 +594,7 @@ def speak(req: SpeakRequest):
             model_id="eleven_turbo_v2_5",  # fastest model as of 2025
             # Speed > 1 talks faster without raising pitch. 1.15 lands at a
             # confident, energetic pace without sounding chipmunked.
-            voice_settings={"stability": 0.5, "similarity_boost": 0.75, "speed": 1.10},
+            voice_settings={"stability": 0.5, "similarity_boost": 0.75, "speed": 1.00},
         ):
             if chunk:
                 audio_chunks.append(chunk)

@@ -212,7 +212,7 @@ export default function App() {
         } else if (hasSpokeRef) {
           // Silence after speech — start countdown if not already running
           if (!silenceTimerRef.current) {
-            silenceTimerRef.current = setTimeout(() => stopRecording(), 1500)
+            silenceTimerRef.current = setTimeout(() => stopRecording(), 1000)
           }
         }
         // If hasSpokeRef is still false, do nothing — wait for first word
